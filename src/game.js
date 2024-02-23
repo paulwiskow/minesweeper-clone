@@ -16,6 +16,7 @@ const BORDER_SIZE = 3;
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+var background_color = "#d4d4d4"
 
 // Drawing expert board initially, expert will probably be default difficulty
 function drawInitialBoard(x, y, tile_color, border_color) {
@@ -37,4 +38,24 @@ function drawInitialBoard(x, y, tile_color, border_color) {
     }
 }
 
+function clickBox(event) {
+    const box_location = findBoxFromMouseLocation(event);
+    ctx.fillStyle = background_color;
+    ctx.fillRect((BORDER_SIZE + BORDER_SIZE * box_location.x) + (TILE_SIZE * box_location.x), (BORDER_SIZE + BORDER_SIZE * box_location.y) + (TILE_SIZE * box_location.y), TILE_SIZE, TILE_SIZE);
+}
+
+function findBoxFromMouseLocation(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mouse_coords =  {
+        x: (e.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
+        y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
+    };
+
+    return {
+        x:  Math.floor((mouse_coords.x - BORDER_SIZE) / (BORDER_SIZE + TILE_SIZE)),
+        y:  Math.floor((mouse_coords.y - BORDER_SIZE) / (BORDER_SIZE + TILE_SIZE))
+    };
+}
+
 window.addEventListener("load", drawInitialBoard(EXPERT_X, EXPERT_Y, "#c4c4c4", "#8a8a8a"));
+window.addEventListener("click", clickBox)
