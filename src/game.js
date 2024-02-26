@@ -78,7 +78,7 @@ function generateMap(origin_x, origin_y, minecount, boardx, boardy) {
             for(let l = -1; l < 2; l++) {
                 if (y + l >= map.length || y + l < 0) continue;
                 for(let o = -1; o < 2; o++) {
-                    if (x + o >= map.length || x + o < 0) continue;
+                    if (x + o >= map[0].length || x + o < 0) continue;
                     if (map[y + l][x + o] === -1) {
                         mine_count++;
                     }
@@ -134,7 +134,8 @@ function openConnectedNothingBoxes(x, y) {
         for(let i = -1; i < 2; i++) {
             if (map_y + i >= temp_map.length || map_y + i < 0) continue;
             for(let j = -1; j < 2; j++) {
-                if (map_x + j >= temp_map.length || map_x + j < 0) continue;
+                console.log(map_x, j, temp_map.length);
+                if (map_x + j >= temp_map[0].length || map_x + j < 0) continue;
                 if (temp_map[map_y + i][map_x + j] === -3) continue;
                 if (temp_map[map_y + i][map_x + j] === 0) {
                     ctx.fillRect(temp_x + j * (TILE_SIZE + BORDER_SIZE), temp_y + i * (TILE_SIZE + BORDER_SIZE), TILE_SIZE, TILE_SIZE);
@@ -205,7 +206,6 @@ function findBoxFromMouseLocation(e) {
 }
 
 window.addEventListener("load", drawInitialBoard(EXPERT_X, EXPERT_Y, "#c4c4c4", "#8a8a8a"));
-window.addEventListener("click", clickBox)
 canvas.addEventListener('mousedown', function(evt) {
     if(evt.button == 0) {
         // left click
