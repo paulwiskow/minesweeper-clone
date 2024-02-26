@@ -23,7 +23,8 @@ let first_click = true;
 // Could potentially implement a set of blocks that are "non-clickable" -> already opened tiles and flagged tiles
 const FIRST_LAYER_PROBABILITY = .60;  // If a mine randomly spawns here, they have another 60 percent chance to spawn at that point -> the gradient will probably have to change per board size
 const SECOND_LAYER_PROBABILITY = .80;  // Same logic as before, can change
-let map = [];  // 0 means empty, -1 is mine, -2 is flagged, >0 is the number on it
+let map = [];  // 0 means empty, -1 is mine, >0 is the number on it
+let tracker = [];  // tracks what is opened (1) and what is not (0) and if a flag is there (2)
 
 // Drawing expert board initially, expert will probably be default difficulty
 function drawInitialBoard(x, y, tile_color, border_color) {
@@ -43,10 +44,11 @@ function drawInitialBoard(x, y, tile_color, border_color) {
             ctx.fillRect((BORDER_SIZE + BORDER_SIZE * j) + (TILE_SIZE * j), (BORDER_SIZE + BORDER_SIZE * i) + (TILE_SIZE * i), TILE_SIZE, TILE_SIZE);
         }
     }
+
+    initializeMap(x, y);
 }
 
 function generateMap(origin_x, origin_y, minecount, boardx, boardy) {
-    initializeMap(boardx, boardy);
     // generate the 2d array with the bombs in relation to where the user clicked taking in mind the probability gradient around where the user clicked (probably only 1 or 2 layers out)
     let i = 0;
     
@@ -97,6 +99,7 @@ function initializeMap(x, y) {
             temp.push(0);
         }
         map.push(temp);
+        tracker.push(temp);
     }
 
     console.log(map);
@@ -108,7 +111,9 @@ function clickBox(event) {
     const y = (BORDER_SIZE + BORDER_SIZE * box_location.y) + (TILE_SIZE * box_location.y);
     ctx.fillStyle = background_color;
     
-    if (first_click) {
+    if(tracker[box_location.y][box_location.x] === 2) {
+        return;
+    } else if (first_click) {
         first_click = false;
         generateMap(box_location.x, box_location.y, EXPERT_MINE_COUNT, EXPERT_X, EXPERT_Y);
         openConnectedNothingBoxes(x, y);
@@ -134,23 +139,22 @@ function openConnectedNothingBoxes(x, y) {
         for(let i = -1; i < 2; i++) {
             if (map_y + i >= temp_map.length || map_y + i < 0) continue;
             for(let j = -1; j < 2; j++) {
-                console.log(map_x, j, temp_map.length);
                 if (map_x + j >= temp_map[0].length || map_x + j < 0) continue;
-                if (temp_map[map_y + i][map_x + j] === -3) continue;
+                if (temp_map[map_y + i][map_x + j] === -3 || tracker[map_y + i][map_x + j] === 2) continue;
                 if (temp_map[map_y + i][map_x + j] === 0) {
                     ctx.fillRect(temp_x + j * (TILE_SIZE + BORDER_SIZE), temp_y + i * (TILE_SIZE + BORDER_SIZE), TILE_SIZE, TILE_SIZE);
                     queue.enqeue([temp_x + j * (TILE_SIZE + BORDER_SIZE), temp_y + i * (TILE_SIZE + BORDER_SIZE)]);
-
-                    temp_map[map_y + i][map_x + j] = -3;
                 } else if (temp_map[map_y + i][map_x + j] > 0) {
                     ctx.fillRect(temp_x + j * (TILE_SIZE + BORDER_SIZE), temp_y + i * (TILE_SIZE + BORDER_SIZE), TILE_SIZE, TILE_SIZE);
-                    temp_map[map_y + i][map_x + j] = -3;
 
                     const x = (BORDER_SIZE + BORDER_SIZE * (map_x + j)) + (TILE_SIZE * (map_x + j));
                     const y = (BORDER_SIZE + BORDER_SIZE * (map_y + i)) + (TILE_SIZE * (map_y + i));
                     addNumber(map_x + j, map_y + i, x, y);
                     ctx.fillStyle = background_color;
                 }
+
+                temp_map[map_y + i][map_x + j] = -3;
+                tracker[map_y + i][map_x + j] = 1;
             }
         }
     }
@@ -190,6 +194,30 @@ function returnNumColor(mine_count) {
     }
 }
 
+function toggleFlag(e) {
+    const map_coords = findBoxFromMouseLocation(e);
+    const map_x = map_coords.x;
+    const map_y = map_coords.y;
+    const board_x = (BORDER_SIZE + BORDER_SIZE * map_x) + (TILE_SIZE * map_x);
+    const board_y = (BORDER_SIZE + BORDER_SIZE * map_y) + (TILE_SIZE * map_y);
+    console.log(tracker);
+
+    if(tracker[map_y][map_x] === 0) {  // add flag
+        const flag = new Image();
+        flag.src = "src/images/red_flag.png";
+        flag.onload = function() {
+            ctx.drawImage(flag, board_x, board_y, TILE_SIZE, TILE_SIZE);
+        }
+
+        tracker[map_y][map_x] = 2;
+    } else if (tracker[map_y][map_x] === 2) {  // undo flag
+        ctx.fillStyle = "#8a8a8a";
+        ctx.fillRect(board_x, board_y, TILE_SIZE, TILE_SIZE);
+
+        tracker[map_y][map_x] = 0;
+    }
+}
+
 function findBoxFromMouseLocation(e) {
     const rect = canvas.getBoundingClientRect();
     // Converts to coords in the canvas
@@ -214,6 +242,6 @@ canvas.addEventListener('mousedown', function(evt) {
         // middle mouse button
     } else if (evt.button === 2) {
         // right click
-
+        toggleFlag(evt);
     }
 });
