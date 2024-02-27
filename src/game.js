@@ -20,11 +20,9 @@ let background_color = "#d4d4d4";
 let first_click = true;
 // Text coordinates are based on bottom left corner
 
-// Could potentially implement a set of blocks that are "non-clickable" -> already opened tiles and flagged tiles
-const FIRST_LAYER_PROBABILITY = .60;  // If a mine randomly spawns here, they have another 60 percent chance to spawn at that point -> the gradient will probably have to change per board size
-const SECOND_LAYER_PROBABILITY = .80;  // Same logic as before, can change
 let map = [];  // 0 means empty, -1 is mine, >0 is the number on it
 let tracker = [];  // tracks what is opened (1) and what is not (0) and if a flag is there (2)
+let flag_count = 0;
 
 // Drawing expert board initially, expert will probably be default difficulty
 function drawInitialBoard(x, y, tile_color, border_color) {
@@ -49,7 +47,6 @@ function drawInitialBoard(x, y, tile_color, border_color) {
 }
 
 function generateMap(origin_x, origin_y, minecount, boardx, boardy) {
-    // generate the 2d array with the bombs in relation to where the user clicked taking in mind the probability gradient around where the user clicked (probably only 1 or 2 layers out)
     let i = 0;
     
     while (i < minecount) {
@@ -58,14 +55,6 @@ function generateMap(origin_x, origin_y, minecount, boardx, boardy) {
 
         if (randx === origin_x + 1 || randx === origin_x - 1 || randy === origin_y + 1 || randy === origin_y - 1 || (randx === origin_x && randy === origin_y)) {
             continue;
-        } else if (randx === origin_x + 2 || randy === origin_y + 2 || randx === origin_x - 2 || randy === origin_y - 2) {
-            if (Math.random() >= FIRST_LAYER_PROBABILITY) {
-                continue;
-            }
-        } else if (randx === origin_x + 3 || randy === origin_y + 3 || randx === origin_x - 3 || randy === origin_y - 3) {
-            if (Math.random() >= SECOND_LAYER_PROBABILITY) {
-                continue;
-            }
         }
 
         map[randy][randx] = -1;
@@ -99,7 +88,7 @@ function initializeMap(x, y) {
             temp.push(0);
         }
         map.push(temp);
-        tracker.push(temp);
+        tracker.push(JSON.parse(JSON.stringify(temp)));
     }
 
     console.log(map);
@@ -111,20 +100,35 @@ function clickBox(event) {
     const y = (BORDER_SIZE + BORDER_SIZE * box_location.y) + (TILE_SIZE * box_location.y);
     ctx.fillStyle = background_color;
     
-    if(tracker[box_location.y][box_location.x] === 2) {
+    if(tracker[box_location.y][box_location.x] === 2 || tracker[box_location.y][box_location.x] === 1) {
         return;
-    } else if (first_click) {
+    } else if(first_click) {
         first_click = false;
         generateMap(box_location.x, box_location.y, EXPERT_MINE_COUNT, EXPERT_X, EXPERT_Y);
         openConnectedNothingBoxes(x, y);
-    } else {
+    } else if(map[box_location.y][box_location.x] === -1) {
+        // game over, reveal all mines
+    } else if(map[box_location.y][box_location.x] > 0 && tracker[box_location.y][box_location.x] !== 1) {
+        // console.log("click number", box_location.x, box_location.y);
+        // console.log(JSON.parse(JSON.stringify(tracker)));
         ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+        addNumber(box_location.x, box_location.y, x, y);
+        tracker[box_location.y][box_location.x] = 1;
+    } else {
+        // console.log("click open", box_location.x, box_location.y);
+        // console.log(JSON.parse(JSON.stringify(tracker)));
+        openConnectedNothingBoxes(x, y);
     }
 }
 
 function openConnectedNothingBoxes(x, y) {
+    ctx.fillStyle = background_color;
     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
     const temp_map = JSON.parse(JSON.stringify(map));  // Had to make a temporary copy to mark tiles as seen
+    const mx = Math.floor((x - BORDER_SIZE) / (BORDER_SIZE + TILE_SIZE));
+    const my = Math.floor((y - BORDER_SIZE) / (BORDER_SIZE + TILE_SIZE));
+    temp_map[my][mx] = -3;
+    tracker[my][mx] = 1;
     let queue = new Queue();
     queue.enqeue([x, y]);
 
@@ -140,7 +144,7 @@ function openConnectedNothingBoxes(x, y) {
             if (map_y + i >= temp_map.length || map_y + i < 0) continue;
             for(let j = -1; j < 2; j++) {
                 if (map_x + j >= temp_map[0].length || map_x + j < 0) continue;
-                if (temp_map[map_y + i][map_x + j] === -3 || tracker[map_y + i][map_x + j] === 2) continue;
+                if (temp_map[map_y + i][map_x + j] === -3 || tracker[map_y + i][map_x + j] === 2 || temp_map[map_y + i][map_x + j] === -1) continue;
                 if (temp_map[map_y + i][map_x + j] === 0) {
                     ctx.fillRect(temp_x + j * (TILE_SIZE + BORDER_SIZE), temp_y + i * (TILE_SIZE + BORDER_SIZE), TILE_SIZE, TILE_SIZE);
                     queue.enqeue([temp_x + j * (TILE_SIZE + BORDER_SIZE), temp_y + i * (TILE_SIZE + BORDER_SIZE)]);
@@ -184,7 +188,7 @@ function returnNumColor(mine_count) {
         case 5:
             return "#835A36";
         case 6:
-            return "cyan";
+            return "#008B8B";
         case 7:
             return "black";
         case 8: 
@@ -200,7 +204,7 @@ function toggleFlag(e) {
     const map_y = map_coords.y;
     const board_x = (BORDER_SIZE + BORDER_SIZE * map_x) + (TILE_SIZE * map_x);
     const board_y = (BORDER_SIZE + BORDER_SIZE * map_y) + (TILE_SIZE * map_y);
-    console.log(tracker);
+    // console.log(tracker);
 
     if(tracker[map_y][map_x] === 0) {  // add flag
         const flag = new Image();
@@ -210,11 +214,13 @@ function toggleFlag(e) {
         }
 
         tracker[map_y][map_x] = 2;
+        flag_count++;
     } else if (tracker[map_y][map_x] === 2) {  // undo flag
         ctx.fillStyle = "#8a8a8a";
         ctx.fillRect(board_x, board_y, TILE_SIZE, TILE_SIZE);
 
         tracker[map_y][map_x] = 0;
+        flag_count--;
     }
 }
 
