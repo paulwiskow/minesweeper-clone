@@ -158,6 +158,7 @@ function clickBox(event) {
     } else if(map[box_location.y][box_location.x] === -1) {
         // console.log("hit mine");
         // game over, reveal all mines
+        lostGame();
     } else if(map[box_location.y][box_location.x] > 0 && tracker[box_location.y][box_location.x] !== 1) {
         // console.log("hit number");
         ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
@@ -230,7 +231,15 @@ function lostGame() {
     for(let i = 0; i < diff_y; i++) {
         for(let j = 0; j < diff_x; j++) {
             if(map[i][j] === -1 && tracker[i][j] !== 2) {
-
+                const board_x = (BORDER_SIZE + BORDER_SIZE * j) + (TILE_SIZE * j);
+                const board_y = (BORDER_SIZE + BORDER_SIZE * i) + (TILE_SIZE * i);
+                ctx.fillStyle = background_color;
+                ctx.fillRect(board_x, board_y, TILE_SIZE, TILE_SIZE);
+                const bomb = new Image();
+                bomb.src = "src/images/bomb.png";
+                bomb.onload = function() {
+                    ctx.drawImage(bomb, board_x - (5 * scaleRatio), board_y, TILE_SIZE + (10 * scaleRatio), TILE_SIZE);
+                }
             }
         }
     }
@@ -306,7 +315,9 @@ window.addEventListener("keydown", function(evt) {
     }
 })
 canvas.addEventListener('mousedown', function(evt) {
-    if(evt.button == 0) {
+    if(lost) {
+        // do nothing
+    } else if(evt.button == 0) {
         // left click
         clickBox(evt);
     } else if (evt.button === 1) {
