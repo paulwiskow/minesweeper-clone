@@ -24,6 +24,7 @@ let first_click = true;
 let map = [];  // 0 means empty, -1 is mine, >0 is the number on it
 let tracker = [];  // tracks what is opened (1) and what is not (0) and if a flag is there (2)
 let flag_count = 0;
+let lost = false;
 
 let difficultyList = document.getElementById("difficulty");
 let diff_x = EXPERT_X;
@@ -49,7 +50,7 @@ difficultyList.onchange = function() {
         diff_mine_count = EASY_MINE_COUNT;
     }
 
-    drawInitialBoard();
+    reset();
 }
 
 size_slider.oninput = function() {
@@ -57,17 +58,21 @@ size_slider.oninput = function() {
     TILE_SIZE = Math.floor(30 * scaleRatio);
     BORDER_SIZE = Math.floor(3 * scaleRatio);
 
+    reset();
+}
+
+function reset() {
+    first_click = true;
+    lost = false;
+    map = [];
+    tracker = [];
+    flag_count = 0;
+
     drawInitialBoard();
 }
 
 // Drawing expert board initially, expert will probably be default difficulty
 function drawInitialBoard() {
-    first_click = true;
-    map = [];
-    tracker = [];
-    flag_count = 0;
-    // Need to put this all in a reset function
-
     canvas.width = (TILE_SIZE * diff_x) + ((diff_x + 1) * BORDER_SIZE);
     canvas.height = (TILE_SIZE * diff_y) + ((diff_y + 1) * BORDER_SIZE);
     ctx.fillStyle = tile_color;
@@ -208,7 +213,7 @@ function openConnectedNothingBoxes(x, y) {
 }
 
 function addNumber(map_x, map_y, board_x, board_y) {
-    ctx.font = `${20 * scaleRatio}pt ＭＳ Ｐゴシック`;
+    ctx.font = `bold ${20 * scaleRatio}pt ＭＳ Ｐゴシック`;
     ctx.textAlign = "center";
 
     const mine_count = map[map_y][map_x];
@@ -216,6 +221,18 @@ function addNumber(map_x, map_y, board_x, board_y) {
     if (mine_count > 0) {
         
         ctx.fillText(`${mine_count}`, board_x + TILE_SIZE / 2, board_y + (TILE_SIZE - (5 * scaleRatio)));
+    }
+}
+
+function lostGame() {
+    lost = true;
+    
+    for(let i = 0; i < diff_y; i++) {
+        for(let j = 0; j < diff_x; j++) {
+            if(map[i][j] === -1 && tracker[i][j] !== 2) {
+
+            }
+        }
     }
 }
 
@@ -283,6 +300,11 @@ function findBoxFromMouseLocation(e) {
 }
 
 window.addEventListener("load", drawInitialBoard);
+window.addEventListener("keydown", function(evt) {
+    if(evt.keyCode === 32) {
+        reset();
+    }
+})
 canvas.addEventListener('mousedown', function(evt) {
     if(evt.button == 0) {
         // left click
