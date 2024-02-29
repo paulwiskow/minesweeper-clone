@@ -7,6 +7,24 @@
     <link rel="stylesheet" href="style/index.css">
 </head>
 <body>
+    <div class="options-container">
+        <div class="difficulty-container">
+            <label for="difficulty">Difficulty</label>
+            <select name="difficulty" id="difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="expert" selected="true">Expert</option>
+            </select>
+        </div>
+        <div class="slider-container">
+            <label for="slider">Size</label>
+            <input name="slider" type="range" min="40" max="200" value="100" id="slider">
+        </div>
+        
+    </div>
+    <div class="board-info-container">
+
+    </div>
     <canvas id="canvas" oncontextmenu="return false"></canvas>
     <script src="src/game.js"></script>
     <script src="src/queue.js"></script>

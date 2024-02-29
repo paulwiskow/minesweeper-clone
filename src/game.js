@@ -1,5 +1,4 @@
 // Beginner, medium, expert, and custom boards -> start with 3 base difficulties
-// Just make a grid
 const EASY_X = 9;
 const EASY_Y = 9;
 const EASY_MINE_COUNT = 10;
@@ -11,12 +10,14 @@ const EXPERT_Y = 16;
 const EXPERT_MINE_COUNT = 99;
 
 // can add variable board size later, right now just use constants
-const TILE_SIZE = 30;
-const BORDER_SIZE = 3;
+let TILE_SIZE = 30;
+let BORDER_SIZE = 3;
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 let background_color = "#d4d4d4";
+let tile_color = "#c4c4c4";
+let border_color = "#8a8a8a";
 let first_click = true;
 // Text coordinates are based on bottom left corner
 
@@ -24,34 +25,75 @@ let map = [];  // 0 means empty, -1 is mine, >0 is the number on it
 let tracker = [];  // tracks what is opened (1) and what is not (0) and if a flag is there (2)
 let flag_count = 0;
 
+let difficultyList = document.getElementById("difficulty");
+let diff_x = EXPERT_X;
+let diff_y = EXPERT_Y;
+let diff_mine_count = EXPERT_MINE_COUNT;
+
+let size_slider = document.getElementById("slider");
+let scaleRatio = 1;
+
+difficultyList.onchange = function() {
+    let selectedDifficulty = difficultyList.value;
+    if (selectedDifficulty === "expert") {
+        diff_x = EXPERT_X;
+        diff_y = EXPERT_Y;
+        diff_mine_count = EXPERT_MINE_COUNT;
+    } else if (selectedDifficulty === "medium") {
+        diff_x = MEDIUM_X;
+        diff_y = MEDIUM_Y;
+        diff_mine_count = MEDIUM_MINE_COUNT;
+    } else if (selectedDifficulty === "easy") {
+        diff_x = EASY_X;
+        diff_y = EASY_Y;
+        diff_mine_count = EASY_MINE_COUNT;
+    }
+
+    drawInitialBoard();
+}
+
+size_slider.oninput = function() {
+    scaleRatio = Number(this.value) / 100;
+    TILE_SIZE = Math.floor(30 * scaleRatio);
+    BORDER_SIZE = Math.floor(3 * scaleRatio);
+
+    drawInitialBoard();
+}
+
 // Drawing expert board initially, expert will probably be default difficulty
-function drawInitialBoard(x, y, tile_color, border_color) {
-    canvas.width = (TILE_SIZE * x) + ((x + 1) * BORDER_SIZE);
-    canvas.height = (TILE_SIZE * y) + ((y + 1) * BORDER_SIZE);
+function drawInitialBoard() {
+    first_click = true;
+    map = [];
+    tracker = [];
+    flag_count = 0;
+    // Need to put this all in a reset function
+
+    canvas.width = (TILE_SIZE * diff_x) + ((diff_x + 1) * BORDER_SIZE);
+    canvas.height = (TILE_SIZE * diff_y) + ((diff_y + 1) * BORDER_SIZE);
     ctx.fillStyle = tile_color;
-    for(let i = 0; i < y + 1; i++) {
+    for(let i = 0; i < diff_y + 1; i++) {
         ctx.fillRect(0, (BORDER_SIZE + TILE_SIZE) * i, canvas.width, BORDER_SIZE);
     }
-    for(let i = 0; i < x + 1; i++) {
+    for(let i = 0; i < diff_x + 1; i++) {
         ctx.fillRect((BORDER_SIZE + TILE_SIZE) * i, 0, BORDER_SIZE, canvas.height);
     }
 
     ctx.fillStyle = border_color;
-    for(let i = 0; i < y; i++) {
-        for(let j = 0; j < x; j++) {
+    for(let i = 0; i < diff_y; i++) {
+        for(let j = 0; j < diff_x; j++) {
             ctx.fillRect((BORDER_SIZE + BORDER_SIZE * j) + (TILE_SIZE * j), (BORDER_SIZE + BORDER_SIZE * i) + (TILE_SIZE * i), TILE_SIZE, TILE_SIZE);
         }
     }
 
-    initializeMap(x, y);
+    initializeMap();
 }
 
-function generateMap(origin_x, origin_y, minecount, boardx, boardy) {
+function generateMap(origin_x, origin_y) {
     let i = 0;
     
-    while (i < minecount) {
-        const randx = Math.floor(Math.random() * boardx);
-        const randy = Math.floor(Math.random() * boardy);
+    while (i < diff_mine_count) {
+        const randx = Math.floor(Math.random() * diff_x);
+        const randy = Math.floor(Math.random() * diff_y);
 
         if (randx === origin_x + 1 || randx === origin_x - 1 || randy === origin_y + 1 || randy === origin_y - 1 || (randx === origin_x && randy === origin_y)) {
             continue;
@@ -62,8 +104,8 @@ function generateMap(origin_x, origin_y, minecount, boardx, boardy) {
     }
 
     // Map out all the numbers
-    for(let y = 0; y < boardy; y++) {
-        for(let x = 0; x < boardx; x++) {
+    for(let y = 0; y < diff_y; y++) {
+        for(let x = 0; x < diff_x; x++) {
             if (map[y][x] === -1) continue;
             let mine_count = 0;
             for(let l = -1; l < 2; l++) {
@@ -81,17 +123,15 @@ function generateMap(origin_x, origin_y, minecount, boardx, boardy) {
     }
 }
 
-function initializeMap(x, y) {
-    for(let i = 0; i < y; i++) {
+function initializeMap() {
+    for(let i = 0; i < diff_y; i++) {
         let temp = [];
-        for(let j = 0; j < x; j++) {
+        for(let j = 0; j < diff_x; j++) {
             temp.push(0);
         }
         map.push(temp);
         tracker.push(JSON.parse(JSON.stringify(temp)));
     }
-
-    console.log(map);
 }
 
 function clickBox(event) {
@@ -101,22 +141,25 @@ function clickBox(event) {
     ctx.fillStyle = background_color;
     
     if(tracker[box_location.y][box_location.x] === 2 || tracker[box_location.y][box_location.x] === 1) {
+        // console.log("hit flag or open square");
+        // console.log(map);
+        // console.log(tracker);
         return;
     } else if(first_click) {
+        // console.log("first click");
         first_click = false;
-        generateMap(box_location.x, box_location.y, EXPERT_MINE_COUNT, EXPERT_X, EXPERT_Y);
+        generateMap(box_location.x, box_location.y);
         openConnectedNothingBoxes(x, y);
     } else if(map[box_location.y][box_location.x] === -1) {
+        // console.log("hit mine");
         // game over, reveal all mines
     } else if(map[box_location.y][box_location.x] > 0 && tracker[box_location.y][box_location.x] !== 1) {
-        // console.log("click number", box_location.x, box_location.y);
-        // console.log(JSON.parse(JSON.stringify(tracker)));
+        // console.log("hit number");
         ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
         addNumber(box_location.x, box_location.y, x, y);
         tracker[box_location.y][box_location.x] = 1;
     } else {
-        // console.log("click open", box_location.x, box_location.y);
-        // console.log(JSON.parse(JSON.stringify(tracker)));
+        // console.log("hit open square");
         openConnectedNothingBoxes(x, y);
     }
 }
@@ -165,13 +208,14 @@ function openConnectedNothingBoxes(x, y) {
 }
 
 function addNumber(map_x, map_y, board_x, board_y) {
-    ctx.font = "20pt ＭＳ Ｐゴシック";
+    ctx.font = `${20 * scaleRatio}pt ＭＳ Ｐゴシック`;
     ctx.textAlign = "center";
 
     const mine_count = map[map_y][map_x];
     ctx.fillStyle = returnNumColor(mine_count);
     if (mine_count > 0) {
-        ctx.fillText(`${mine_count}`, board_x + TILE_SIZE / 2, board_y + (TILE_SIZE - 5));
+        
+        ctx.fillText(`${mine_count}`, board_x + TILE_SIZE / 2, board_y + (TILE_SIZE - (5 * scaleRatio)));
     }
 }
 
@@ -204,7 +248,6 @@ function toggleFlag(e) {
     const map_y = map_coords.y;
     const board_x = (BORDER_SIZE + BORDER_SIZE * map_x) + (TILE_SIZE * map_x);
     const board_y = (BORDER_SIZE + BORDER_SIZE * map_y) + (TILE_SIZE * map_y);
-    // console.log(tracker);
 
     if(tracker[map_y][map_x] === 0) {  // add flag
         const flag = new Image();
@@ -239,7 +282,7 @@ function findBoxFromMouseLocation(e) {
     };
 }
 
-window.addEventListener("load", drawInitialBoard(EXPERT_X, EXPERT_Y, "#c4c4c4", "#8a8a8a"));
+window.addEventListener("load", drawInitialBoard);
 canvas.addEventListener('mousedown', function(evt) {
     if(evt.button == 0) {
         // left click

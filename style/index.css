@@ -1,3 +1,15 @@
+.options-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+    place-items: center;
+    margin-bottom: 2em;
+    margin-top: 2em;
+}
+
 #canvas {
+    display: block;
+    margin: auto;
+    padding: 0;
     border: 1px solid black;
 }
