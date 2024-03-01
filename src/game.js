@@ -38,15 +38,14 @@ let scaleRatio = 1;
 let flagTracker = document.getElementById("flag-count");
 let timer = document.getElementById("timer");
 let seconds = 0;
+let intervalId;
 
 function trackTimer() {
     if(start) {
+        seconds++;
         if(String(seconds).length === 1) timer.innerHTML = `00${seconds}`;
         else if(String(seconds).length === 2) timer.innerHTML = `0${seconds}`;
         else if(String(seconds).length === 3) timer.innerHTML = `${seconds}`;
-        seconds++;
-
-        setTimeout(trackTimer, 1000);
     }
 }
 
@@ -89,6 +88,7 @@ function reset() {
     timer.innerHTML = "000";
     flagTracker.innerHTML = "00";
 
+    if(intervalId !== null) clearInterval(intervalId);
     drawInitialBoard();
 }
 
@@ -170,13 +170,14 @@ function clickBox(event) {
         return;
     } else if(first_click) {
         start = true;
-        trackTimer();
+        intervalId = setInterval(trackTimer, 1000);
         first_click = false;
         generateMap(box_location.x, box_location.y);
         openConnectedNothingBoxes(x, y);
     } else if(map[box_location.y][box_location.x] === -1) {
         // game over, reveal all mines
         start = false;
+        clearInterval(intervalId);
         lostGame();
     } else if(map[box_location.y][box_location.x] > 0 && tracker[box_location.y][box_location.x] !== 1) {
         ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
