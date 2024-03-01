@@ -1,3 +1,8 @@
+@font-face {
+    font-family: "digital-font";
+    src: url("../src/fonts/digital-7.ttf");
+}
+
 .options-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -16,8 +21,15 @@
 
 .board-info-container {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     grid-template-rows: 1fr;
     place-items: center;
     margin-bottom: 1em;
+}
+
+.data {
+    font-family: "digital-font";
+    font-size: 3em;
+    padding: 0;
+    margin: 0;
 }

@@ -25,6 +25,7 @@ let map = [];  // 0 means empty, -1 is mine, >0 is the number on it
 let tracker = [];  // tracks what is opened (1) and what is not (0) and if a flag is there (2)
 let flag_count = 0;
 let lost = false;
+let start = false;
 
 let difficultyList = document.getElementById("difficulty");
 let diff_x = EXPERT_X;
@@ -33,6 +34,21 @@ let diff_mine_count = EXPERT_MINE_COUNT;
 
 let size_slider = document.getElementById("slider");
 let scaleRatio = 1;
+
+let flagTracker = document.getElementById("flag-count");
+let timer = document.getElementById("timer");
+let seconds = 0;
+
+function trackTimer() {
+    if(start) {
+        if(String(seconds).length === 1) timer.innerHTML = `00${seconds}`;
+        else if(String(seconds).length === 2) timer.innerHTML = `0${seconds}`;
+        else if(String(seconds).length === 3) timer.innerHTML = `${seconds}`;
+        seconds++;
+
+        setTimeout(trackTimer, 1000);
+    }
+}
 
 difficultyList.onchange = function() {
     let selectedDifficulty = difficultyList.value;
@@ -64,9 +80,14 @@ size_slider.oninput = function() {
 function reset() {
     first_click = true;
     lost = false;
+    start = false;
     map = [];
     tracker = [];
     flag_count = 0;
+    seconds = 0;
+
+    timer.innerHTML = "000";
+    flagTracker.innerHTML = "00";
 
     drawInitialBoard();
 }
@@ -146,26 +167,22 @@ function clickBox(event) {
     ctx.fillStyle = background_color;
     
     if(tracker[box_location.y][box_location.x] === 2 || tracker[box_location.y][box_location.x] === 1) {
-        // console.log("hit flag or open square");
-        // console.log(map);
-        // console.log(tracker);
         return;
     } else if(first_click) {
-        // console.log("first click");
+        start = true;
+        trackTimer();
         first_click = false;
         generateMap(box_location.x, box_location.y);
         openConnectedNothingBoxes(x, y);
     } else if(map[box_location.y][box_location.x] === -1) {
-        // console.log("hit mine");
         // game over, reveal all mines
+        start = false;
         lostGame();
     } else if(map[box_location.y][box_location.x] > 0 && tracker[box_location.y][box_location.x] !== 1) {
-        // console.log("hit number");
         ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
         addNumber(box_location.x, box_location.y, x, y);
         tracker[box_location.y][box_location.x] = 1;
     } else {
-        // console.log("hit open square");
         openConnectedNothingBoxes(x, y);
     }
 }
@@ -291,6 +308,9 @@ function toggleFlag(e) {
         tracker[map_y][map_x] = 0;
         flag_count--;
     }
+
+    if(String(flag_count).length === 1) flagTracker.innerHTML = `0${flag_count}`;
+    else if(String(flag_count).length === 2) flagTracker.innerHTML = `${flag_count}`;
 }
 
 function findBoxFromMouseLocation(e) {
