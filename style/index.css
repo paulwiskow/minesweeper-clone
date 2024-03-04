@@ -25,6 +25,9 @@
     grid-template-rows: 1fr;
     place-items: center;
     margin-bottom: 1em;
+    margin-right: auto;
+    margin-left: auto;
+    width: 50%;
 }
 
 .data {

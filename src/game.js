@@ -24,7 +24,7 @@ let first_click = true;
 let map = [];  // 0 means empty, -1 is mine, >0 is the number on it
 let tracker = [];  // tracks what is opened (1) and what is not (0) and if a flag is there (2)
 let flag_count = 0;
-let lost = false;
+let end = false;
 let start = false;
 
 let difficultyList = document.getElementById("difficulty");
@@ -78,7 +78,7 @@ size_slider.oninput = function() {
 
 function reset() {
     first_click = true;
-    lost = false;
+    end = false;
     start = false;
     map = [];
     tracker = [];
@@ -116,12 +116,14 @@ function drawInitialBoard() {
 
 function generateMap(origin_x, origin_y) {
     let i = 0;
+
+    console.log(origin_x, origin_y);
     
     while (i < diff_mine_count) {
         const randx = Math.floor(Math.random() * diff_x);
         const randy = Math.floor(Math.random() * diff_y);
 
-        if (randx === origin_x + 1 || randx === origin_x - 1 || randy === origin_y + 1 || randy === origin_y - 1 || (randx === origin_x && randy === origin_y)) {
+        if (randx === origin_x + 1 || randx === origin_x - 1 || randy === origin_y + 1 || randy === origin_y - 1 || (randx === origin_x && randy === origin_y) || map[randy][randx] === -1) {
             continue;
         }
 
@@ -186,6 +188,12 @@ function clickBox(event) {
     } else {
         openConnectedNothingBoxes(x, y);
     }
+
+    if(checkWin()) {
+        start = false;
+        end = true;
+        clearInterval(intervalId);
+    }
 }
 
 function openConnectedNothingBoxes(x, y) {
@@ -244,7 +252,7 @@ function addNumber(map_x, map_y, board_x, board_y) {
 }
 
 function lostGame() {
-    lost = true;
+    end = true;
     
     for(let i = 0; i < diff_y; i++) {
         for(let j = 0; j < diff_x; j++) {
@@ -329,6 +337,18 @@ function findBoxFromMouseLocation(e) {
     };
 }
 
+function checkWin() {
+    for(let i = 0; i < diff_y; i++) {
+        for(let j = 0; j < diff_x; j++) {
+            if(tracker[i][j] !== 1 && map[i][j] >= 0) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 window.addEventListener("load", drawInitialBoard);
 window.addEventListener("keydown", function(evt) {
     if(evt.keyCode === 32) {
@@ -336,7 +356,7 @@ window.addEventListener("keydown", function(evt) {
     }
 })
 canvas.addEventListener('mousedown', function(evt) {
-    if(lost) {
+    if(end) {
         // do nothing
     } else if(evt.button == 0) {
         // left click
