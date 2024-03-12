@@ -116,8 +116,6 @@ function drawInitialBoard() {
 
 function generateMap(origin_x, origin_y) {
     let i = 0;
-
-    console.log(origin_x, origin_y);
     
     while (i < diff_mine_count) {
         const randx = Math.floor(Math.random() * diff_x);
@@ -311,7 +309,8 @@ function toggleFlag(e) {
         tracker[map_y][map_x] = 2;
         flag_count++;
     } else if (tracker[map_y][map_x] === 2) {  // undo flag
-        ctx.fillStyle = "#8a8a8a";
+        // idk how tf border_color got swtiched to tile_color but idk
+        ctx.fillStyle = border_color;
         ctx.fillRect(board_x, board_y, TILE_SIZE, TILE_SIZE);
 
         tracker[map_y][map_x] = 0;
@@ -349,6 +348,53 @@ function checkWin() {
     return true;
 }
 
+function middleClick(e) {
+    const box_location = findBoxFromMouseLocation(e);
+    const map_x = box_location.x;
+    const map_y = box_location.y;
+    const board_x = (BORDER_SIZE + BORDER_SIZE * box_location.x) + (TILE_SIZE * box_location.x);
+    const board_y = (BORDER_SIZE + BORDER_SIZE * box_location.y) + (TILE_SIZE * box_location.y);
+
+    // make sure the number of flags around the box is equal to the number
+    const flag_confirm = map[map_y][map_x];
+    let flag_count = 0;
+    for(let i = -1; i < 2; i++) {
+        if (map_y + i >= map.length || map_y + i < 0) continue;
+        for(let j = -1; j < 2; j++) {
+            if (map_x + j >= map[0].length || map_x + j < 0) continue;
+            if(tracker[map_y + i][map_x + j] === 2) flag_count++;
+        }
+    }
+
+    // open all immediate neighbors, open connected boxes if it is an empty box
+    if(flag_count === flag_confirm) {
+        for(let i = -1; i < 2; i++) {
+            if (map_y + i >= map.length || map_y + i < 0) continue;
+            for(let j = -1; j < 2; j++) {
+                if (map_x + j >= map[0].length || map_x + j < 0) continue;
+                if(map[map_y + i][map_x + j] > 0) {
+                    ctx.fillStyle = background_color;
+                    ctx.fillRect(board_x + j*(BORDER_SIZE + TILE_SIZE), board_y + i*(BORDER_SIZE + TILE_SIZE), TILE_SIZE, TILE_SIZE);
+                    addNumber(map_x + j, map_y + i, board_x + j*(BORDER_SIZE + TILE_SIZE), board_y + i*(BORDER_SIZE + TILE_SIZE));
+                    tracker[map_y + i][map_x + j] = 1;
+                } else if(tracker[map_y + i][map_x + j] !== 2 && map[map_y + i][map_x + j] === -1) {
+                    start = false;
+                    clearInterval(intervalId);
+                    lostGame();
+                } else if(tracker[map_y + i][map_x + j] !== 2) {
+                    openConnectedNothingBoxes(board_x + j*(BORDER_SIZE + TILE_SIZE), board_y + i*(BORDER_SIZE + TILE_SIZE));
+                }
+            }
+        }
+    }
+
+    if(checkWin()) {
+        start = false;
+        end = true;
+        clearInterval(intervalId);
+    }
+}
+
 window.addEventListener("load", drawInitialBoard);
 window.addEventListener("keydown", function(evt) {
     if(evt.keyCode === 32) {
@@ -361,8 +407,9 @@ canvas.addEventListener('mousedown', function(evt) {
     } else if(evt.button == 0) {
         // left click
         clickBox(evt);
-    } else if (evt.button === 1) {
+    } else if (evt.button === 1 && start) {
         // middle mouse button
+        middleClick(evt);
     } else if (evt.button === 2) {
         // right click
         toggleFlag(evt);
